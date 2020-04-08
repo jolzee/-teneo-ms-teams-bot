@@ -32,7 +32,7 @@ Before we can deploy our connector, we need an 'Application Id' and 'Application
 
 We now have the details the connector needs to be able to run. Click the button below to deploy the connector to Heroku:
 
-[![Deploy](https://www.herokucdn.com/deploy/button.svg?classes=noborder)](https://heroku.com/deploy?template=https://github.com/artificialsolutions/tie-api-example-ms-bot-framework)
+[![Deploy](https://www.herokucdn.com/deploy/button.svg?classes=noborder)](https://heroku.com/deploy?template=https://github.com/jolzee/teneo-ms-teams-bot)
 
 In the 'Config Vars' section, add the following:
 
