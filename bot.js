@@ -99,7 +99,7 @@ class MyBot {
    * @param {TurnContext} on turn context object.
    */
   async handleMessage(turnContext) {
-    console.log(`Message From:`, turnContext.from.name);
+    console.log(`Message From:`, turnContext.TurnContext.from.name);
     const message = turnContext.activity;
     // console.log(message);
     try {
@@ -119,7 +119,7 @@ class MyBot {
         text: messageText,
         channel: "botframework-" + message.channelId,
         sheetId: googleSheetId,
-        name: turnContext.from.name,
+        name: turnContext.TurnContext.from.name,
       };
 
       if (message.attachments) {
