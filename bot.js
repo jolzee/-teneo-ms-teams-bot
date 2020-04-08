@@ -79,11 +79,27 @@ class MyBot {
     await this.conversationState.saveChanges(turnContext);
   }
 
+  getChunks(answerText) {
+    let finalAnswerText = "";
+    const chunks = answerText.split("||");
+    chunks.forEach((chunk) => {
+      const trimmedChunk = chunk.trim();
+      if (trimmedChunk) {
+        finalAnswerText += `||${trimmedChunk}`;
+      }
+    });
+    if (finalAnswerText.startsWith("||")) {
+      finalAnswerText = finalAnswerText.substring(2);
+    }
+    return finalAnswerText.trim().split("||");
+  }
+
   /**
    *
    * @param {TurnContext} on turn context object.
    */
   async handleMessage(turnContext) {
+    console.log(`turnContext`, turnContext);
     const message = turnContext.activity;
     // console.log(message);
     try {
@@ -121,33 +137,41 @@ class MyBot {
       // store egnine sessionId in conversation state
       await this.sessionIdProperty.set(turnContext, teneoResponse.sessionId);
 
-      const reply = [];
+      // split the reply by possible chunk separator || reply text from engine
+      let chunks = this.getChunks(teneoResponse.output.text);
 
-      // set reply text to answer text from engine
-      reply.text = teneoResponse.output.text;
+      for (let index = 0; index < chunks.length; index++) {
+        const chunkAnswer = chunks[index];
+        const reply = {};
 
-      // check if an output parameter 'msbotframework' exists in engine response
-      // if so, check if it should be added as attachment/card or suggestion action
-      if (teneoResponse.output.parameters.msbotframework) {
-        try {
-          const extension = JSON.parse(
-            teneoResponse.output.parameters.msbotframework
-          );
+        reply.text = chunkAnswer;
 
-          // suggested actions have an 'actions' key
-          if (extension.actions) {
-            reply.suggestedActions = extension;
-          } else {
-            // we assume the extension code matches that of an attachment or rich card
-            reply.attachments = [extension];
+        // only send bot framework actions for the last chunk
+        if (index + 1 === chunks.length) {
+          // check if an output parameter 'msbotframework' exists in engine response
+          // if so, check if it should be added as attachment/card or suggestion action
+          if (teneoResponse.output.parameters.msbotframework) {
+            try {
+              const extension = JSON.parse(
+                teneoResponse.output.parameters.msbotframework
+              );
+
+              // suggested actions have an 'actions' key
+              if (extension.actions) {
+                reply.suggestedActions = extension;
+              } else {
+                // we assume the extension code matches that of an attachment or rich card
+                reply.attachments = [extension];
+              }
+            } catch (attachError) {
+              console.error(`Failed when parsing attachment JSON`, attachError);
+            }
           }
-        } catch (error_attach) {
-          console.error(`Failed when parsing attachment JSON`, error_attach);
         }
-      }
 
-      // send response to bot framework.
-      await turnContext.sendActivity(reply);
+        // send response to bot framework.
+        await turnContext.sendActivity(reply);
+      }
     } catch (error) {
       console.error(
         `Failed when sending input to Teneo Engine @ ${teneoEngineUrl}`,
