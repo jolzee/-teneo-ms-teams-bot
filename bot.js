@@ -99,7 +99,19 @@ class MyBot {
    * @param {TurnContext} on turn context object.
    */
   async handleMessage(turnContext) {
-    console.log(`Message From:`, JSON.stringify(turnContext, null, 2));
+    const fullName = turnContext._activity.from.name; // Full name
+    const firstName = fullName.split(" ")[0];
+    const lastName = fullName.substring(
+      0,
+      fullName.length > firstName.length
+        ? firstName.length + 1
+        : firstName.length
+    );
+
+    const country = turnContext._activity.entities[0].country; // something like "US"
+    const locale = turnContext._activity.entities[0].locale;
+
+    // console.log(`Turn Context Info:`, JSON.stringify(turnContext, null, 2));
     const message = turnContext.activity;
     // console.log(message);
     try {
@@ -119,6 +131,12 @@ class MyBot {
         text: messageText,
         channel: "botframework-" + message.channelId,
         sheetId: googleSheetId,
+        displayName: fullName,
+        lastName: lastName,
+        givenName: firstName,
+        name: firstName,
+        countryCode: country,
+        locale: locale,
       };
 
       if (message.attachments) {
