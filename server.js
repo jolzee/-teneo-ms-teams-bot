@@ -64,6 +64,12 @@ adapter.onTurnError = async (context, error) => {
   context.sendActivity(`Oops. Something went wrong!`);
 };
 
+server.get("/ping", (req, res) => {
+  res.send({
+    status: "pong",
+  });
+});
+
 // Listen for incoming requests.
 server.post("/api/messages", (req, res) => {
   adapter.processActivity(req, res, async (context) => {
