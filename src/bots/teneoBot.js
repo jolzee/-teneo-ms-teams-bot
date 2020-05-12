@@ -14,6 +14,7 @@
  * limitations under the License.
  */
 
+const { DialogBot } = require("./dialogBot");
 const { ActivityTypes } = require("botbuilder");
 const TIE = require("@artificialsolutions/tie-api-client");
 const dotenv = require("dotenv");
@@ -31,12 +32,22 @@ const WELCOMED_USER = "welcomedUserProperty";
 // initialize a Teneo client for interacting with TeneoEengine
 const teneoApi = TIE.init(teneoEngineUrl);
 
-class MyBot {
+class TeneoBot extends DialogBot {
   /**
    *
    * @param {ConversationState} conversation state object
    */
-  constructor(conversationState) {
+  constructor(
+    conversationReferences,
+    conversationState,
+    userState,
+    mainAuthDialog
+  ) {
+    super(conversationState, userState, mainAuthDialog);
+
+    // Dependency injected dictionary for storing ConversationReference objects used in NotifyController to proactively message users
+    this.conversationReferences = conversationReferences;
+
     // Creates a new state accessor property.
     // See https://aka.ms/about-bot-state-accessors to learn more about the bot state and state accessors.
     this.sessionIdProperty = conversationState.createProperty(
@@ -45,6 +56,41 @@ class MyBot {
     this.welcomedUserProperty = conversationState.createProperty(WELCOMED_USER);
 
     this.conversationState = conversationState;
+
+    this.onConversationUpdate(async (context, next) => {
+      this.addConversationReference(context.activity);
+      await next();
+    });
+
+    this.onMembersAdded(async (context, next) => {
+      const membersAdded = context.activity.membersAdded;
+      for (let cnt = 0; cnt < membersAdded.length; cnt++) {
+        if (membersAdded[cnt].id !== context.activity.recipient.id) {
+          const welcomeMessage =
+            "Proactive Greeting. Hi! In future I will expose a url '/api/notify?msg=This is a notification' that will proactively message everyone who has previously messaged this bot.";
+          await context.sendActivity(welcomeMessage);
+        }
+      }
+
+      // By calling next() you ensure that the next BotHandler is run.
+      await next();
+    });
+
+    this.onMessage(async (context, next) => {
+      this.addConversationReference(context.activity);
+
+      // Echo back what the user said
+      await context.sendActivity(`You sent '${context.activity.text}'`);
+      await next();
+    });
+  }
+
+  /**
+   * Override the ActivityHandler.run() method to save state changes after the bot logic completes.
+   */
+  async run(context) {
+    await super.run(context);
+    this.onTurn(context);
   }
   /**
    *
@@ -92,6 +138,15 @@ class MyBot {
       finalAnswerText = finalAnswerText.substring(2);
     }
     return finalAnswerText.trim().split("||");
+  }
+
+  addConversationReference(activity) {
+    const conversationReference = TurnContext.getConversationReference(
+      activity
+    );
+    this.conversationReferences[
+      conversationReference.conversation.id
+    ] = conversationReference;
   }
 
   /**
@@ -199,4 +254,4 @@ class MyBot {
   }
 }
 
-module.exports.MyBot = MyBot;
+module.exports.TeneoBot = TeneoBot;
