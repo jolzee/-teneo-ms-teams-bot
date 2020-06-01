@@ -135,8 +135,8 @@ class MyBot {
         lastName: lastName,
         givenName: firstName,
         name: firstName,
-        countryCode: country,
-        locale: locale,
+        countryCode: country ? country : "",
+        locale: locale ? locale : "",
       };
 
       if (message.attachments) {
